@@ -1,0 +1,33 @@
+﻿@model IEnumerable<AspCoreMvcSingnalR.DatabaseEntity.UserChatHistory>
+@{
+    string loginUserId = ViewData["loginUserId"].ToString();
+}
+@if (Model.Any())
+{
+    foreach (var chat in Model)
+    {
+        if (chat.SenderUserId.ToString() == loginUserId)
+        {
+            //sender is loggged in user then show message to right side
+            <li class="right">
+                <div class="text">
+                    <div class="user">
+                        <i class="fa fa-user-circle-o" aria-hidden="true"></i> @chat.SenderUser.FullName
+                    </div>
+                </div>
+                <small>@chat.Message</small>
+            </li>
+        }
+        else
+        {
+            <li class="left">
+                <div class="text">
+                    <div class="user">
+                        <i class="fa fa-user-circle-o" aria-hidden="true"></i> @chat.SenderUser.FullName
+                    </div>
+                </div>
+                <small>@chat.Message</small>
+            </li>
+        }
+    }
+}

@@ -1,0 +1,306 @@
+﻿@model AspCoreMvcSingnalR.Controllers.UserChatViewModel
+@{
+    ViewData["Title"] = "Chat";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style type="text/css">
+  
+
+    .chat-list {
+        max-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .user {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+
+        .user img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50px;
+            margin-right: 5px;
+        }
+
+        .user:hover {
+            background-color: #f0f0f0;
+        }
+
+    .chat-window {
+        position: absolute;
+        bottom: 60px;
+        right: 0;
+        width: 350px;
+        height: 425px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        display: none;
+    }
+
+    .chat-header {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .chat-body {
+        height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    .chat-footer {
+        display: flex;
+        padding: 15px 10px;
+        border-top: 1px solid #ddd;
+    }
+
+    .close {
+        float: right;
+        cursor: pointer;
+    }
+
+    .chat-ui {
+        list-style: none;
+        padding: 0px;
+        margin: 0;
+    }
+
+        .chat-ui li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+            .chat-ui li img {
+                width: 40px;
+                height: 40px;
+                border-radius: 50px;
+                object-fit: cover;
+                object-position: center;
+            }
+
+            .chat-ui li .text {
+                display: flex;
+                flex-direction: column;
+            }
+
+                .chat-ui li .text span {
+                    font-size: 12px;
+                }
+
+    li.right {
+        justify-content: end;
+        text-align: right;
+    }
+
+    .chatbox {
+        margin-bottom: 5%;
+        padding: 20px;
+        border: 1px solid #e1e1e1;
+        box-shadow: 0 15px 35px -15px #e1e1e1;
+        border-top: 10px solid #68798f;
+    }
+
+    .chatlisthead {
+        background: #7ea67e;
+        padding: 2px;
+    }
+
+    .overlay {
+        position: fixed;
+        background: #4646462b;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 10000;
+    }
+    .min-vh-80{
+        min-height:80vh;
+    }
+    .dot {
+        background: tomato;
+    }
+
+        .dot, .dot:after {
+            display: inline-block;
+            width: 2em;
+            height: 2em;
+            border-radius: 50%;
+            animation: a 1.5s calc(((var(--i) + var(--o, 0))/var(--n) - 1)*1.5s) infinite;
+        }
+
+            .dot:after {
+                --o: 1;
+                background: currentcolor;
+                content: '';
+            }
+
+    @@keyframes a 
+        0%, 50% {
+            transform: scale(0);
+        }
+</style>
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-8 position-relative min-vh-80">
+            <h4 style="text-align: center;">Login User: @Model.LoggedInUser.FullName</h4>
+            <div class="chat-window" id="chat-window">
+                <div class="chat-header">
+                    <span class="close" id="close-chat">&times;</span>
+                    <h4>Chat with <span id="chat-user">User</span></h4>
+                </div>
+                <div class="chat-body">
+                    <ul class="chat-ui" data-userid="" id="chatlist">
+                      
+                    </ul>
+                </div>
+                <div class="chat-footer">
+                    <input type="text" class="form-control" id="textmessage" placeholder="Type a message...">
+                    <button class="btn btn-primary ml-1" onclick="SendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-4 chatbox">
+            <h5 class="chatlisthead">Chat List</h5>
+            <div class="chat-list">
+                @if(Model!=null && Model.Users.Any())
+                {
+                    foreach(var user in Model.Users)
+                    {
+                        <div class="user" data-user-id="@user.UserId">
+                            <i class="fa fa-user-circle-o" aria-hidden="true"></i> @user.FullName
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/css/toastr.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/js/toastr.js"></script>
+<div class="overlay" id="divloader" style="display:none">
+    <div class="a" style="--n: 5;position: absolute;top: 50%;left: 50%;">
+        <div class="dot" style="--i: 0;"></div>
+        <div class="dot" style="--i: 1;"></div>
+        <div class="dot" style="--i: 2;"></div>
+        <div class="dot" style="--i: 3;"></div>
+        <div class="dot" style="--i: 4;"></div>
+    </div>
+</div>
+<script type="text/javascript">
+    function Loader(_value) {
+        if (_value) {
+            document.getElementById("divloader").style.display = "block";
+        }
+        else {
+            document.getElementById("divloader").style.display = "none";
+        }
+        setTimeout(function () { document.getElementById("divloader").style.display = "none"; }, 30000);
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $(".user").click(function () {
+            var userId = $(this).data("user-id");
+            var userName = $(this).text();
+            $("#chat-user").text(userName);
+            $("#chat-window").slideDown();
+            $("#chatlist").attr("data-userid", userId);
+            $("#chatlist").empty();
+            LoadUserChatList(userId);
+        });
+
+        $("#close-chat").click(function () {
+            $("#chat-window").slideUp();
+        });
+    });
+    var senderChatId = "@Model.LoggedInUser.UserId";
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/RealTimeChatHub")
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+
+    async function start() {
+        try {
+            await connection.start();
+            console.log("SignalR Connected.");
+            //Creating user group with his unique chatId
+            await connection.invoke("CreateUserChatGroup", senderChatId);
+        } catch (err) {
+            console.log(err);
+            setTimeout(start, 5000);
+        }
+    };
+
+    connection.on("ReceiveMessage", async (senderId, senderName,message) => {
+        var messageBuilder = "<li class='left'><div class='text'><div class='user'>" + GetUserNameWithIcon(senderName) + "</div><small>" + message + "</small>" + "</li>"
+        $("#chatlist").append(messageBuilder);
+        //Showing notifcation to user if get any message
+        var notification = "You have received a message from user " + senderName;
+        toastr.success(notification);
+    });
+
+    connection.onclose(async () => {
+        await start();
+    });
+
+    // Start the connection.
+    start();
+
+    async function SendMessage() {
+        try {
+            var message = $("#textmessage").val();
+            if (message) {
+
+                //Getting reciver unique chatId for sending message to reciver user chat Group so that others user can't recived it
+                var reciverId = $("#chatlist").attr("data-userid");
+                var senderName = '@Model.LoggedInUser.FullName';
+                await connection.invoke("SendMessageToUserGroup", senderChatId, senderName, reciverId, message);
+                var messageBuilder = "<li class='right'><div class='text'><div class='user'>" + GetUserNameWithIcon(senderName) + "</div><small>" + message + "</small>" + "</li>"
+                $("#chatlist").append(messageBuilder);
+                $("#textmessage").val("");
+            }
+            else {
+
+                toastr.error("Please input message!");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    //Function for getting username and icon when binding message to the chat list
+    function GetUserNameWithIcon(userName) {
+        return '<i class="fa fa-user-circle-o" aria-hidden="true"></i>' + userName;
+    }
+    function LoadUserChatList(name)
+    {
+        Loader(true)
+        $.ajax({
+            url: '/UserChat/GetChatCobversion?userIdToLoadChat=' + name,
+            type: 'GET',
+            success: function (result) {
+                $('#chatlist').html(result);
+                Loader(false)
+            },
+            error: function (xhr, status, error) {
+                console.log(xhr.responseText);
+                Loader(false)
+            }
+        });
+    }
+</script>
+
